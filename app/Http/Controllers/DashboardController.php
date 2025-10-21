@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Services\TaskService;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -28,7 +29,7 @@ class DashboardController extends Controller
         });
 
         return Inertia::render('Dashboard', [
-            'projects' => $projectsWithStats
+            'projects' => $projectsWithStats,
         ]);
     }
 }

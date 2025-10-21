@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Data\Task\CreateTaskData;
 use App\Enums\TaskStatuses;
+use App\Models\Task;
 use App\Services\TaskService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -30,26 +32,25 @@ class TaskController extends Controller
                 title: $request->title,
                 description: $request->description,
                 assigned_to: $request->assigned_to,
-                due_date: $request->due_date,
+                due_date: $request->due_date ? Carbon::parse($request->due_date) : null,
                 status: TaskStatuses::PENDING,
             )
         );
 
-        return response()->json($task->load('assignedUser'));
+        return redirect()->route('projects.show', ['project' => $task->project])
+            ->with('success', 'Task created successfully!');
     }
 
     public function updateStatus(Request $request, int $taskId)
     {
         $request->validate([
-            'status' => 'required|in:pending,in-progress,done'
+            'status' => 'required|in:' . implode(',', TaskStatuses::values())
         ]);
 
         $task = $this->taskService->updateTaskStatus($taskId, TaskStatuses::from($request->status));
 
-        return response()->json([
-            'task' => $task->load('assignedUser'),
-            'message' => 'Task status updated successfully'
-        ]);
+        return redirect()->route('projects.show', ['project' => $task->project])
+            ->with('success', 'Task status updated successfully!');
     }
 
     public function update(Request $request, int $taskId)
@@ -63,13 +64,21 @@ class TaskController extends Controller
 
         $task = $this->taskService->updateTask($taskId, $request->all());
 
-        return response()->json($task->load('assignedUser'));
+        return redirect()->route('projects.show', ['project' => $task->project])
+            ->with('success', 'Task updated successfully!');
     }
 
     public function destroy(int $taskId)
     {
+        $task = Task::find($taskId);
+        if (!$task) {
+            return redirect()->back()
+                ->with('error', 'Task not found!');
+        }
+
         $this->taskService->deleteTask($taskId);
 
-        return response()->json(['message' => 'Task deleted successfully']);
+        return redirect()->back()
+            ->with('success', 'Task deleted successfully!');
     }
 }
